@@ -1,10 +1,16 @@
 import os
+import sys
+import time
+import asyncio
 import threading
 from flask import Flask
 import discord
 from discord.ext import commands
 
-# 1. سيرفر الويب الوهمي لإرضاء Render ومنع خطأ المنفذ
+# إجبار إخراج الطباعة فوراً على Logs خادم Render
+sys.stdout.reconfigure(line_buffering=True)
+
+# 1. سيرفر الويب الوهمي لإرضاء Render ومنع خطأ المنفذ (Port)
 app = Flask(__name__)
 
 @app.route('/')
@@ -15,64 +21,57 @@ def run_web_server():
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
+# آيدي الروم الصوتي المراد الدخول إليه
 VOICE_CHANNEL_ID = 1560296177033941014
 
-# 2. إعداد البوت الأول
-bot1 = commands.Bot(command_prefix="!", self_bot=True)
+def start_single_bot(token, bot_name):
+    if not token:
+        print(f"[{bot_name}] خطأ: التوكن غير موجود!")
+        return
 
-@bot1.event
-async def on_ready():
-    print(f"[البوت الأول] تم تسجيل الدخول بنجاح باسم: {bot1.user}")
+    # إنشاء حلقة أحداث (Event Loop) مستقلة لكل خيط
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    bot = commands.Bot(command_prefix="!", self_bot=True, loop=loop)
+
+    @bot.event
+    async def on_ready():
+        print(f"[{bot_name}] تم تسجيل الدخول بنجاح باسم: {bot.user}")
+        try:
+            channel = await bot.fetch_channel(VOICE_CHANNEL_ID)
+            if channel:
+                await channel.connect()
+                print(f"[{bot_name}] دخل الروم الصوتي بنجاح وتم تفعيل الاتصال!")
+            else:
+                print(f"[{bot_name}] خطأ: لم يتم العثور على الروم الصوتي!")
+        except Exception as e:
+            print(f"[{bot_name}] خطأ أثناء الاتصال بالفويس: {e}")
+
     try:
-        channel = bot1.get_channel(VOICE_CHANNEL_ID)
-        if channel:
-            await channel.connect()
-            print("[البوت الأول] دخل الروم الصوتي بنجاح!")
-        else:
-            print("[البوت الأول] خطأ: لم يتم العثور على الروم الصوتي!")
+        loop.run_until_complete(bot.start(token))
     except Exception as e:
-        print(f"[البوت الأول] خطأ أثناء الاتصال بالفويس: {e}")
-
-# 3. إعداد البوت الثاني
-bot2 = commands.Bot(command_prefix="!", self_bot=True)
-
-@bot2.event
-async def on_ready():
-    print(f"[البوت الثاني] تم تسجيل الدخول بنجاح باسم: {bot2.user}")
-    try:
-        channel = bot2.get_channel(VOICE_CHANNEL_ID)
-        if channel:
-            await channel.connect()
-            print("[البوت الثاني] دخل الروم الصوتي بنجاح!")
-        else:
-            print("[البوت الثاني] خطأ: لم يتم العثور على الروم الصوتي!")
-    except Exception as e:
-        print(f"[البوت الثاني] خطأ أثناء الاتصال بالفويس: {e}")
+        print(f"[{bot_name}] انقطع البوت أو حدث خطأ: {e}")
 
 if __name__ == "__main__":
-    # تشغيل سيرفر الويب في الخلفية
-    server_thread = threading.Thread(target=run_web_server)
-    server_thread.daemon = True
+    # تشغيل سيرفر الويب في خلفية منفصلة
+    server_thread = threading.Thread(target=run_web_server, daemon=True)
     server_thread.start()
 
     token1 = os.getenv("TOKEN_1")
     token2 = os.getenv("TOKEN_2")
 
-    # تشغيل البوت الثاني في خلفية مستقلة بطريقة آمنة
+    # تشغيل الحساب الثاني في خيط مستقل
     if token2:
-        def run_bot2():
-            try:
-                bot2.run(token2)
-            except Exception as e:
-                print(f"خطأ في البوت الثاني: {e}")
-        
-        t2 = threading.Thread(target=run_bot2)
-        t2.daemon = True
+        t2 = threading.Thread(target=start_single_bot, args=(token2, "البوت الثاني"), daemon=True)
         t2.start()
 
-    # تشغيل البوت الأول في الخيط الرئيسي
+    time.sleep(3)
+
+    # تشغيل الحساب الأول في الخيط الرئيسي
     if token1:
-        try:
-            bot1.run(token1)
-        except Exception as e:
-            print(f"خطأ في البوت الأول: {e}")
+        start_single_bot(token1, "البوت الأول")
+    else:
+        # إذا لم يتوفر التوكن الأول، ابقِ السيرفر معلقاً لكي لا ينتهي السكربت
+        while True:
+            time.sleep(60)
