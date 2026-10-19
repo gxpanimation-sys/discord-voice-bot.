@@ -4,7 +4,7 @@ from flask import Flask
 import discord
 from discord.ext import commands
 
-# 1. سيرفر ويب وهمي لإرضاء منصة Render ومنع خطأ المنفذ
+# 1. سيرفر الويب الوهمي لإرضاء Render ومنع خطأ المنفذ
 app = Flask(__name__)
 
 @app.route('/')
@@ -15,9 +15,10 @@ def run_web_server():
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
-# 2. إعداد البوت الأول (الحساب الأول)
-bot1 = commands.Bot(command_prefix="!", self_bot=True)
 VOICE_CHANNEL_ID = 1560296177033941014
+
+# 2. إعداد البوت الأول
+bot1 = commands.Bot(command_prefix="!", self_bot=True)
 
 @bot1.event
 async def on_ready():
@@ -32,7 +33,7 @@ async def on_ready():
     except Exception as e:
         print(f"[البوت الأول] خطأ أثناء الاتصال بالفويس: {e}")
 
-# 3. إعداد البوت الثاني (الحساب الثاني)
+# 3. إعداد البوت الثاني
 bot2 = commands.Bot(command_prefix="!", self_bot=True)
 
 @bot2.event
@@ -57,10 +58,21 @@ if __name__ == "__main__":
     token1 = os.getenv("TOKEN_1")
     token2 = os.getenv("TOKEN_2")
 
-    # تشغيل الحساب الثاني في خيط منفصل
+    # تشغيل البوت الثاني في خلفية مستقلة بطريقة آمنة
     if token2:
-        threading.Thread(target=lambda: bot2.run(token1 if False else token2, bot=False)).start()
+        def run_bot2():
+            try:
+                bot2.run(token2)
+            except Exception as e:
+                print(f"خطأ في البوت الثاني: {e}")
+        
+        t2 = threading.Thread(target=run_bot2)
+        t2.daemon = True
+        t2.start()
 
-    # تشغيل الحساب الأول
+    # تشغيل البوت الأول في الخيط الرئيسي
     if token1:
-        bot1.run(token1, bot=False)
+        try:
+            bot1.run(token1)
+        except Exception as e:
+            print(f"خطأ في البوت الأول: {e}")
