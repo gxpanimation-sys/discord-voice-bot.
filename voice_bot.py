@@ -9,7 +9,7 @@ from discord.ext import commands
 
 sys.stdout.reconfigure(line_buffering=True)
 
-# 1. سيرفر الويب الوهمي لإرضاء Render
+# 1. سيرفر الويب الوهمي لإرضاء Railway ومنع أي خطأ بورت
 app = Flask(__name__)
 
 @app.route('/')
@@ -17,7 +17,7 @@ def home():
     return "Discord Voice Bots are Alive!"
 
 def run_web_server():
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
 
 VOICE_CHANNEL_ID = 1560296177033941014
@@ -35,10 +35,10 @@ def start_single_bot(token, bot_name):
     @bot.event
     async def on_ready():
         print(f"[{bot_name}] تم تسجيل الدخول بنجاح باسم: {bot.user}")
-        await asyncio.sleep(5)
+        await asyncio.sleep(4)
         
         try:
-            # الاتصال المباشر بالصوت باستخدام آيدي القناة ككائن اتصال جاهز
+            # الاتصال المباشر الفوري بالآيدي دون الحاجة لجلب بيانات القناة
             channel = discord.Object(id=VOICE_CHANNEL_ID)
             await channel.connect()
             print(f"[{bot_name}] دخل الروم الصوتي بنجاح تام وبات متصلاً!")
