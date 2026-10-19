@@ -90,7 +90,7 @@ if __name__ == "__main__":
     server_thread.daemon = True
     server_thread.start()
 
-on_bot_thread = threading.Thread(target=run_discord_bot)
-    on_bot_thread.start()
-
-    on_bot_thread.join()
+    # تشغيل بوت ديسكورد
+    bot_thread = threading.Thread(target=run_discord_bot)
+    bot_thread.start()
+    bot_thread.join()
