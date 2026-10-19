@@ -38,13 +38,24 @@ def start_single_bot(token, bot_name):
     @bot.event
     async def on_ready():
         print(f"[{bot_name}] تم تسجيل الدخول بنجاح باسم: {bot.user}")
+        
+        # الانتظار قليلاً لضمان تحميل قنوات السيرفرات بالكامل
+        await asyncio.sleep(3)
+        
         try:
-            channel = await bot.fetch_channel(VOICE_CHANNEL_ID)
+            channel = bot.get_channel(VOICE_CHANNEL_ID)
+            if not channel:
+                # محاولة بحث بديلة في كل السيرفرات المشتركة
+                for guild in bot.guilds:
+                    channel = guild.get_channel(VOICE_CHANNEL_ID)
+                    if channel:
+                        break
+
             if channel:
                 await channel.connect()
                 print(f"[{bot_name}] دخل الروم الصوتي بنجاح وتم تفعيل الاتصال!")
             else:
-                print(f"[{bot_name}] خطأ: لم يتم العثور على الروم الصوتي!")
+                print(f"[{bot_name}] خطأ: لم يتم العثور على الروم الصوتي! تأكد أن الحساب موجود في السيرفر الذي يضم الروم.")
         except Exception as e:
             print(f"[{bot_name}] خطأ أثناء الاتصال بالفويس: {e}")
 
@@ -72,6 +83,5 @@ if __name__ == "__main__":
     if token1:
         start_single_bot(token1, "البوت الأول")
     else:
-        # إذا لم يتوفر التوكن الأول، ابقِ السيرفر معلقاً لكي لا ينتهي السكربت
         while True:
             time.sleep(60)
