@@ -35,21 +35,15 @@ def start_single_bot(token, bot_name):
     @bot.event
     async def on_ready():
         print(f"[{bot_name}] تم تسجيل الدخول بنجاح باسم: {bot.user}")
-        await asyncio.sleep(4)
+        await asyncio.sleep(5)
         
         try:
-            # الاتصال المباشر بالقناة الصوتية بالآيدي دون الحاجة للبحث في السيرفرات
-            channel = bot.get_channel(VOICE_CHANNEL_ID)
-            if channel is None:
-                channel = await bot.fetch_channel(VOICE_CHANNEL_ID)
-                
-            if channel:
-                await channel.connect()
-                print(f"[{bot_name}] دخل الروم الصوتي بنجاح تام!")
-            else:
-                print(f"[{bot_name}] خطأ: لم يتم التعرف على القناة!")
+            # الاتصال المباشر بالصوت باستخدام آيدي القناة ككائن اتصال جاهز
+            channel = discord.Object(id=VOICE_CHANNEL_ID)
+            await channel.connect()
+            print(f"[{bot_name}] دخل الروم الصوتي بنجاح تام وبات متصلاً!")
         except Exception as e:
-            print(f"[{bot_name}] خطأ أثناء الاتصال بالفويس: {e}")
+            print(f"[{bot_name}] خطأ أثناء الاتصال المباشر بالفويس: {e}")
 
     try:
         loop.run_until_complete(bot.start(token))
