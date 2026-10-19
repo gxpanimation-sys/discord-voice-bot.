@@ -9,27 +9,26 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# 1. إنشاء سيرفر ويب وهمي لإرضاء منصة Render ومنع خطأ المنفذ (Port)
+# 1. سيرفر الويب الوهمي لإرضاء Render ومنع خطأ المنفذ
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Discord Voice Bot is Alive!"
+    return "Discord Voice Bots are Alive!"
 
 def run_web_server():
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
-# 2. دالة تشغيل البوت عبر كروم الخفيف
-def run_discord_bot():
-    token = os.getenv("TOKEN_1") # تشغيل الحساب الأول لضمان عدم استهلاك الذاكرة
+# 2. دالة تشغيل البوت لكل حساب
+def run_discord_bot(token, bot_name):
     voice_channel_url = "https://discord.com/channels/902273871133163530/1560296177033941014"
 
     if not token:
-        print("[Bot] خطأ: التوكن غير موجود!")
+        print(f"[{bot_name}] خطأ: التوكن غير موجود!")
         return
 
-    print("[Bot] جاري بدء تشغيل متصفح كروم الخفيف...")
+    print(f"[{bot_name}] جاري بدء تشغيل المتصفح...")
     
     options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
@@ -46,8 +45,8 @@ def run_discord_bot():
 
     try:
         driver.get("https://discord.com/login")
-        print("[Bot] جاري فتح ديسكورد...")
-        time.sleep(4)
+        print(f"[{bot_name}] جاري فتح ديسكورد...")
+        time.sleep(5)
 
         script = f"""
         let token = "{token}";
@@ -57,40 +56,52 @@ def run_discord_bot():
         document.body.removeChild(iframe);
         """
         driver.execute_script(script)
-        print("[Bot] تم حقن التوكن بنجاح!")
+        print(f"[{bot_name}] تم حقن التوكن بنجاح!")
 
         driver.refresh()
-        time.sleep(6)
+        time.sleep(8)
 
         driver.get(voice_channel_url)
-        print("[Bot] جاري الانتظار للانضمام إلى الفويس...")
+        print(f"[{bot_name}] جاري الانضمام إلى الفويس...")
 
-        wait = WebDriverWait(driver, 35)
+        wait = WebDriverWait(driver, 40)
         join_button = wait.until(
             EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Join Voice')]"))
         )
-        time.sleep(2)
+        time.sleep(3)
         join_button.click()
-        print("[Bot] تم الانضمام بنجاح وفعل الاتصال الصوتي!")
+        print(f"[{bot_name}] تم الانضمام بنجاح وفعل الاتصال الصوتي!")
 
-        # إبقاء السكربت شغّالاً
+        # إبقاء الحساب متصلاً للأبد
         while True:
             time.sleep(60)
 
     except Exception as e:
-        print(f"[Bot] حدث خطأ: {e}")
+        print(f"[{bot_name}] حدث خطأ: {e}")
         try:
             driver.quit()
         except:
             pass
 
 if __name__ == "__main__":
-    # تشغيل سيرفر الويب في خلفية منفصلة
+    # تشغيل سيرفر الويب في الخلفية
     server_thread = threading.Thread(target=run_web_server)
     server_thread.daemon = True
     server_thread.start()
 
-    # تشغيل بوت ديسكورد
-    bot_thread = threading.Thread(target=run_discord_bot)
-    bot_thread.start()
-    bot_thread.join()
+    # سحب التوكنات من متغيرات البيئة
+    token1 = os.getenv("TOKEN_1")
+    token2 = os.getenv("TOKEN_2")
+
+    # تشغيل الحساب الأول في خيط منفصل
+    if token1:
+        t1 = threading.Thread(target=run_discord_bot, args=(token1, "البوت الأول"))
+        t1.start()
+
+    # تأخير بسيط لكي لا يضغطوا على السيرفر في نفس الميلي ثانية
+    time.sleep(5)
+
+    # تشغيل الحساب الثاني في خيط منفصل
+    if token2:
+        t2 = threading.Thread(target=run_discord_bot, args=(token2, "البوت الثاني"))
+        t2.start()
