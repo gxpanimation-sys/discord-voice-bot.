@@ -1,13 +1,12 @@
 FROM python:3.11-slim
 
-# تثبيت المتطلبات الأساسية ومتصفح كروم
+# تثبيت المتطلبات الأساسية ومتصفح كروم بشكل محدث
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
     gnupg \
     unzip \
     libxi6 \
-    libgconf-2-4 \
     libnss3 \
     libatk-bridge2.0-0 \
     libcups2 \
