@@ -1,6 +1,5 @@
 import os
 import time
-from multiprocessing import Process
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
@@ -8,18 +7,16 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# ==================== الأمان أولاً ====================
-# يتم سحب التوكنات بسلامة من إعدادات سحابة Render السرية
+# سحب التوكنات من متغيرات البيئة السرية
 ACCOUNT_1_TOKEN = os.getenv("TOKEN_1")
 ACCOUNT_2_TOKEN = os.getenv("TOKEN_2")
 
 # رابط الروم الصوتي المراد الدخول إليه
 VOICE_CHANNEL_URL = "https://discord.com/channels/902273871133163530/1560296177033941014"
-# =========================================================
 
-def run_bot(token, bot_name):
+def login_and_join(token, bot_name):
     if not token:
-        print(f"[{bot_name}] خطأ: لم يتم العثور على التوكن في متغيرات البيئة!")
+        print(f"[{bot_name}] خطأ: التوكن غير موجود!")
         return
 
     print(f"[{bot_name}] جاري بدء تشغيل المتصفح...")
@@ -30,6 +27,9 @@ def run_bot(token, bot_name):
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-infobars")
     options.add_argument("--use-fake-ui-for-media-stream")
+    # تقليص استهلاك الذاكرة لمنع الـ Out of Memory
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1280,720")
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
@@ -60,20 +60,20 @@ def run_bot(token, bot_name):
         )
         time.sleep(2)
         join_button.click()
-        print(f"[{bot_name}] تم الانضمام بنجاح! الحساب متصل الآن.")
+        print(f"[{bot_name}] تم الانضمام بنجاح وفعل الاتصال!")
 
+        # إبقاء المتصفح شغال في الخلفية لهذا الحساب
         while True:
             time.sleep(60)
 
     except Exception as e:
         print(f"[{bot_name}] حدث خطأ: {e}")
+        try:
+            driver.quit()
+        except:
+            pass
 
 if __name__ == "__main__":
-    p1 = Process(target=run_bot, args=(ACCOUNT_1_TOKEN, "الحساب الأول"))
-    p2 = Process(target=run_bot, args=(ACCOUNT_2_TOKEN, "الحساب الثاني"))
-
-    p1.start()
-    p2.start()
-
-    p1.join()
-    p2.join()
+    # تشغيل الحساب الأول ثم الحساب الثاني بشكل متتابع لمنع استهلاك الذاكرة المفاجئ
+    print("بدء تشغيل الحساب الأول...")
+    login_and_join(ACCOUNT_1_TOKEN, "الحساب الأول")
